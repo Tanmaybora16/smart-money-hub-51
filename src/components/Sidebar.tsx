@@ -32,7 +32,7 @@ const Sidebar = ({
   }];
   return <div className="w-64 border-r bg-card h-screen sticky top-0 flex flex-col">
       <div className="p-6 border-b">
-        <h2 className="text-xl font-bold gradient-primary bg-clip-text text-slate-950">
+        <h2 className="text-xl font-bold gradient-primary bg-clip-text text-slate-50">
           FinanceTracker
         </h2>
         <p className="text-xs text-muted-foreground mt-1">Smart Money Management</p>
