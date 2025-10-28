@@ -32,6 +32,9 @@ const TransactionForm = ({ open, onOpenChange, onAddTransaction }: TransactionFo
     description: "",
     date: new Date().toISOString().split("T")[0],
   });
+  
+  const [customCategory, setCustomCategory] = useState("");
+  const [customPaymentMethod, setCustomPaymentMethod] = useState("");
 
   const categories = {
     expense: ["Food & Dining", "Shopping", "Transportation", "Bills & Utilities", "Entertainment", "Healthcare", "Other"],
@@ -43,6 +46,25 @@ const TransactionForm = ({ open, onOpenChange, onAddTransaction }: TransactionFo
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if Other is selected but custom value not provided
+    if (formData.category === "Other" && !customCategory.trim()) {
+      toast({
+        title: "Missing Custom Category",
+        description: "Please specify the category name",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (formData.paymentMethod === "Other" && !customPaymentMethod.trim()) {
+      toast({
+        title: "Missing Custom Payment Method",
+        description: "Please specify the payment method",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!formData.amount || !formData.category || !formData.paymentMethod) {
       toast({
@@ -56,9 +78,9 @@ const TransactionForm = ({ open, onOpenChange, onAddTransaction }: TransactionFo
     const transaction: Transaction = {
       id: Date.now().toString(),
       amount: parseFloat(formData.amount),
-      category: formData.category,
+      category: formData.category === "Other" ? customCategory : formData.category,
       type: formData.type,
-      paymentMethod: formData.paymentMethod,
+      paymentMethod: formData.paymentMethod === "Other" ? customPaymentMethod : formData.paymentMethod,
       description: formData.description,
       date: formData.date,
     };
@@ -79,6 +101,8 @@ const TransactionForm = ({ open, onOpenChange, onAddTransaction }: TransactionFo
       description: "",
       date: new Date().toISOString().split("T")[0],
     });
+    setCustomCategory("");
+    setCustomPaymentMethod("");
     
     onOpenChange(false);
   };
@@ -129,7 +153,10 @@ const TransactionForm = ({ open, onOpenChange, onAddTransaction }: TransactionFo
             <Label htmlFor="category">Category *</Label>
             <Select
               value={formData.category}
-              onValueChange={(value) => setFormData({ ...formData, category: value })}
+              onValueChange={(value) => {
+                setFormData({ ...formData, category: value });
+                if (value !== "Other") setCustomCategory("");
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
@@ -142,13 +169,24 @@ const TransactionForm = ({ open, onOpenChange, onAddTransaction }: TransactionFo
                 ))}
               </SelectContent>
             </Select>
+            {formData.category === "Other" && (
+              <Input
+                placeholder="Enter custom category name"
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+                className="mt-2"
+              />
+            )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="paymentMethod">Payment Method *</Label>
             <Select
               value={formData.paymentMethod}
-              onValueChange={(value) => setFormData({ ...formData, paymentMethod: value })}
+              onValueChange={(value) => {
+                setFormData({ ...formData, paymentMethod: value });
+                if (value !== "Other") setCustomPaymentMethod("");
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select method" />
@@ -161,6 +199,14 @@ const TransactionForm = ({ open, onOpenChange, onAddTransaction }: TransactionFo
                 ))}
               </SelectContent>
             </Select>
+            {formData.paymentMethod === "Other" && (
+              <Input
+                placeholder="Enter custom payment method"
+                value={customPaymentMethod}
+                onChange={(e) => setCustomPaymentMethod(e.target.value)}
+                className="mt-2"
+              />
+            )}
           </div>
 
           <div className="space-y-2">
