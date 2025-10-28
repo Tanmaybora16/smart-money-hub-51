@@ -4,10 +4,12 @@ import { cn } from "@/lib/utils";
 interface SidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  onAddTransaction: () => void;
 }
 const Sidebar = ({
   activeTab,
-  onTabChange
+  onTabChange,
+  onAddTransaction
 }: SidebarProps) => {
   const menuItems = [{
     id: "dashboard",
@@ -39,7 +41,11 @@ const Sidebar = ({
       </div>
 
       <div className="flex-1 p-4 space-y-2">
-        <Button className="w-full justify-start gap-3 mb-4 gradient-primary text-white hover:opacity-90" size="lg">
+        <Button 
+          className="w-full justify-start gap-3 mb-4 gradient-primary text-white hover:opacity-90" 
+          size="lg"
+          onClick={onAddTransaction}
+        >
           <Plus className="h-5 w-5" />
           Add Transaction
         </Button>
