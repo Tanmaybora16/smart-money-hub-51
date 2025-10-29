@@ -1,15 +1,31 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Transaction } from "./TransactionForm";
 
-const SpendingChart = () => {
-  const data = [
-    { month: "Jan", expenses: 2400, investments: 1800 },
-    { month: "Feb", expenses: 1398, investments: 2200 },
-    { month: "Mar", expenses: 3800, investments: 1600 },
-    { month: "Apr", expenses: 3908, investments: 2800 },
-    { month: "May", expenses: 4800, investments: 3200 },
-    { month: "Jun", expenses: 3800, investments: 2900 }
-  ];
+interface SpendingChartProps {
+  transactions: Transaction[];
+}
+
+const SpendingChart = ({ transactions }: SpendingChartProps) => {
+  // Group transactions by month
+  const monthlyData = transactions.reduce((acc: any, transaction) => {
+    const date = new Date(transaction.date);
+    const monthKey = date.toLocaleDateString("en-US", { month: "short" });
+    
+    if (!acc[monthKey]) {
+      acc[monthKey] = { month: monthKey, expenses: 0, investments: 0 };
+    }
+    
+    if (transaction.type === "expense") {
+      acc[monthKey].expenses += Number(transaction.amount);
+    } else if (transaction.type === "investment") {
+      acc[monthKey].investments += Number(transaction.amount);
+    }
+    
+    return acc;
+  }, {});
+
+  const data = Object.values(monthlyData).slice(0, 6);
 
   return (
     <Card className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
