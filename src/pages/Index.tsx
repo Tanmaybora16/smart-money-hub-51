@@ -3,6 +3,24 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Download } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import Sidebar from "@/components/Sidebar";
 import Dashboard from "@/components/Dashboard";
 import RecentTransactions from "@/components/RecentTransactions";
@@ -10,6 +28,7 @@ import SpendingChart from "@/components/SpendingChart";
 import BudgetProgress from "@/components/BudgetProgress";
 import InvestmentPortfolio from "@/components/InvestmentPortfolio";
 import TransactionForm, { Transaction } from "@/components/TransactionForm";
+import { exportToPDF, exportToExcel } from "@/lib/exportTransactions";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -21,6 +40,7 @@ const Index = () => {
   const [loadingTransactions, setLoadingTransactions] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
+  const [showClearDialog, setShowClearDialog] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -131,6 +151,7 @@ const Index = () => {
       });
     } else {
       setTransactions([]);
+      setShowClearDialog(false);
       toast({
         title: "All transactions cleared",
         description: "Your transaction history has been cleared.",
@@ -237,22 +258,40 @@ const Index = () => {
               <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <h1 className="text-2xl lg:text-3xl font-bold">Transactions</h1>
-                  <select
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="px-4 py-2 rounded-md border border-input bg-background"
-                  >
-                    <option value="all">All Months</option>
-                    {getAvailableMonths().map(monthKey => {
-                      const [year, month] = monthKey.split("-");
-                      const date = new Date(parseInt(year), parseInt(month));
-                      return (
-                        <option key={monthKey} value={monthKey}>
-                          {date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                        </option>
-                      );
-                    })}
-                  </select>
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="px-4 py-2 rounded-md border border-input bg-background"
+                    >
+                      <option value="all">All Months</option>
+                      {getAvailableMonths().map(monthKey => {
+                        const [year, month] = monthKey.split("-");
+                        const date = new Date(parseInt(year), parseInt(month));
+                        return (
+                          <option key={monthKey} value={monthKey}>
+                            {date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => exportToPDF(filteredTransactions)}>
+                          Download as PDF
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => exportToExcel(filteredTransactions)}>
+                          Download as Excel
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
                 <RecentTransactions 
                   transactions={filteredTransactions} 
@@ -300,7 +339,7 @@ const Index = () => {
                         Clear all your transaction history. This action cannot be undone.
                       </p>
                       <button
-                        onClick={handleClearAllTransactions}
+                        onClick={() => setShowClearDialog(true)}
                         className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"
                       >
                         Clear All Transactions
@@ -319,6 +358,24 @@ const Index = () => {
         onOpenChange={setIsFormOpen}
         onAddTransaction={handleAddTransaction}
       />
+
+      <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete all your
+              transactions from the database.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearAllTransactions} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
