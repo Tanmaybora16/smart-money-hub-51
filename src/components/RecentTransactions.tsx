@@ -1,14 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, ArrowDownRight, ShoppingBag, Home, Utensils, Plane, TrendingUp, Coffee, Car, Wallet } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, ShoppingBag, Home, Utensils, Plane, TrendingUp, Coffee, Car, Wallet, Trash2 } from "lucide-react";
 import { Transaction } from "./TransactionForm";
 
 interface RecentTransactionsProps {
   transactions: Transaction[];
   showAll?: boolean;
+  onDelete?: (id: string) => void;
 }
 
-const RecentTransactions = ({ transactions, showAll = false }: RecentTransactionsProps) => {
+const RecentTransactions = ({ transactions, showAll = false, onDelete }: RecentTransactionsProps) => {
   const displayTransactions = showAll ? transactions : transactions.slice(0, 5);
 
   const getCategoryIcon = (category: string) => {
@@ -84,15 +85,29 @@ const RecentTransactions = ({ transactions, showAll = false }: RecentTransaction
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center">
-                    {isExpense ? (
-                      <ArrowDownRight className="h-4 w-4 mr-1 text-destructive" />
-                    ) : (
-                      <ArrowUpRight className="h-4 w-4 mr-1 text-success" />
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center">
+                      {isExpense ? (
+                        <ArrowDownRight className="h-4 w-4 mr-1 text-destructive" />
+                      ) : (
+                        <ArrowUpRight className="h-4 w-4 mr-1 text-success" />
+                      )}
+                      <span className={`font-semibold ${isExpense ? 'text-destructive' : 'text-success'}`}>
+                        {isExpense ? "-" : "+"}₹{transaction.amount.toLocaleString()}
+                      </span>
+                    </div>
+                    {onDelete && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(transaction.id);
+                        }}
+                        className="p-2 hover:bg-destructive/10 rounded-full transition-colors"
+                        aria-label="Delete transaction"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </button>
                     )}
-                    <span className={`font-semibold ${isExpense ? 'text-destructive' : 'text-success'}`}>
-                      {isExpense ? "-" : "+"}₹{transaction.amount.toLocaleString()}
-                    </span>
                   </div>
                 </div>
               );
