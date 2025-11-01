@@ -3,24 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Download } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import Sidebar from "@/components/Sidebar";
 import Dashboard from "@/components/Dashboard";
 import RecentTransactions from "@/components/RecentTransactions";
@@ -28,7 +10,6 @@ import SpendingChart from "@/components/SpendingChart";
 import BudgetProgress from "@/components/BudgetProgress";
 import InvestmentPortfolio from "@/components/InvestmentPortfolio";
 import TransactionForm, { Transaction } from "@/components/TransactionForm";
-import { exportToPDF, exportToExcel } from "@/lib/exportTransactions";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -39,8 +20,6 @@ const Index = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState<string>("all");
-  const [showClearDialog, setShowClearDialog] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -116,76 +95,9 @@ const Index = () => {
     }
   };
 
-  const handleDeleteTransaction = async (id: string) => {
-    const { error } = await supabase
-      .from("transactions")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      toast({
-        title: "Error deleting transaction",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      setTransactions(transactions.filter(t => t.id !== id));
-      toast({
-        title: "Transaction deleted",
-        description: "Your transaction has been removed.",
-      });
-    }
-  };
-
-  const handleClearAllTransactions = async () => {
-    const { error } = await supabase
-      .from("transactions")
-      .delete()
-      .eq("user_id", user?.id);
-
-    if (error) {
-      toast({
-        title: "Error clearing transactions",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      setTransactions([]);
-      setShowClearDialog(false);
-      toast({
-        title: "All transactions cleared",
-        description: "Your transaction history has been cleared.",
-      });
-    }
-  };
-
   const handleLogout = async () => {
     await signOut();
     navigate("/auth");
-  };
-
-  const getFilteredTransactions = () => {
-    if (selectedMonth === "all") return transactions;
-    
-    return transactions.filter(t => {
-      const transactionDate = new Date(t.date);
-      const [year, month] = selectedMonth.split("-");
-      return transactionDate.getFullYear() === parseInt(year) && 
-             transactionDate.getMonth() === parseInt(month);
-    });
-  };
-
-  const filteredTransactions = getFilteredTransactions();
-
-  // Get unique months from transactions
-  const getAvailableMonths = () => {
-    const months = new Set<string>();
-    transactions.forEach(t => {
-      const date = new Date(t.date);
-      const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
-      months.add(monthKey);
-    });
-    return Array.from(months).sort().reverse();
   };
 
   if (loading || !user) {
@@ -242,15 +154,12 @@ const Index = () => {
                     <p className="text-muted-foreground text-sm lg:text-base">Welcome back! Here's your financial overview.</p>
                   </div>
                 </div>
-                <Dashboard transactions={filteredTransactions} />
+                <Dashboard transactions={transactions} />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <SpendingChart transactions={filteredTransactions} />
-                  <BudgetProgress transactions={filteredTransactions} />
+                  <SpendingChart transactions={transactions} />
+                  <BudgetProgress transactions={transactions} />
                 </div>
-                <RecentTransactions 
-                  transactions={filteredTransactions} 
-                  onDelete={handleDeleteTransaction}
-                />
+                <RecentTransactions transactions={transactions} />
               </div>
             )}
 
@@ -258,53 +167,15 @@ const Index = () => {
               <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <h1 className="text-2xl lg:text-3xl font-bold">Transactions</h1>
-                  <div className="flex gap-2">
-                    <select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      className="px-4 py-2 rounded-md border border-input bg-background"
-                    >
-                      <option value="all">All Months</option>
-                      {getAvailableMonths().map(monthKey => {
-                        const [year, month] = monthKey.split("-");
-                        const date = new Date(parseInt(year), parseInt(month));
-                        return (
-                          <option key={monthKey} value={monthKey}>
-                            {date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                          </option>
-                        );
-                      })}
-                    </select>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => exportToPDF(filteredTransactions)}>
-                          Download as PDF
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => exportToExcel(filteredTransactions)}>
-                          Download as Excel
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
                 </div>
-                <RecentTransactions 
-                  transactions={filteredTransactions} 
-                  onDelete={handleDeleteTransaction}
-                  showAll 
-                />
+                <RecentTransactions transactions={transactions} showAll />
               </div>
             )}
 
             {activeTab === "investments" && (
               <div className="space-y-6">
                 <h1 className="text-2xl lg:text-3xl font-bold">Investment Portfolio</h1>
-                <InvestmentPortfolio transactions={filteredTransactions} />
+                <InvestmentPortfolio transactions={transactions} />
               </div>
             )}
 
@@ -312,10 +183,10 @@ const Index = () => {
               <div className="space-y-6">
                 <h1 className="text-2xl lg:text-3xl font-bold">Analytics</h1>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <SpendingChart transactions={filteredTransactions} />
-                  <InvestmentPortfolio transactions={filteredTransactions} />
+                  <SpendingChart transactions={transactions} />
+                  <InvestmentPortfolio transactions={transactions} />
                 </div>
-                <BudgetProgress transactions={filteredTransactions} />
+                <BudgetProgress transactions={transactions} />
               </div>
             )}
 
@@ -331,22 +202,6 @@ const Index = () => {
                     </div>
                   </div>
                 </div>
-                <div className="bg-card p-6 rounded-lg border border-border">
-                  <h2 className="text-xl font-semibold mb-4">Data Management</h2>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Clear all your transaction history. This action cannot be undone.
-                      </p>
-                      <button
-                        onClick={() => setShowClearDialog(true)}
-                        className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"
-                      >
-                        Clear All Transactions
-                      </button>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
           </div>
@@ -358,24 +213,6 @@ const Index = () => {
         onOpenChange={setIsFormOpen}
         onAddTransaction={handleAddTransaction}
       />
-
-      <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete all your
-              transactions from the database.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleClearAllTransactions} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete All
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
