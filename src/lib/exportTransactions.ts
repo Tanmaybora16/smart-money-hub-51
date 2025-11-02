@@ -1,9 +1,10 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
 import { Transaction } from "@/components/TransactionForm";
 
-export const exportToPDF = (transactions: Transaction[]) => {
+export const exportToPDF = async (transactions: Transaction[]) => {
+  // Dynamic import to reduce initial bundle size
+  const jsPDF = (await import("jspdf")).default;
+  const autoTable = (await import("jspdf-autotable")).default;
+  
   const doc = new jsPDF();
   
   // Add title
@@ -60,7 +61,9 @@ export const exportToPDF = (transactions: Transaction[]) => {
   doc.save(`transactions-${new Date().toISOString().split('T')[0]}.pdf`);
 };
 
-export const exportToExcel = (transactions: Transaction[]) => {
+export const exportToExcel = async (transactions: Transaction[]) => {
+  // Dynamic import to reduce initial bundle size
+  const XLSX = await import("xlsx");
   // Prepare data for Excel
   const excelData = transactions.map(t => ({
     Date: new Date(t.date).toLocaleDateString(),

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,13 +22,25 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import Sidebar from "@/components/Sidebar";
-import Dashboard from "@/components/Dashboard";
-import RecentTransactions from "@/components/RecentTransactions";
-import SpendingChart from "@/components/SpendingChart";
-import BudgetProgress from "@/components/BudgetProgress";
-import InvestmentPortfolio from "@/components/InvestmentPortfolio";
 import TransactionForm, { Transaction } from "@/components/TransactionForm";
-import { exportToPDF, exportToExcel } from "@/lib/exportTransactions";
+
+// Lazy load heavy components for code splitting
+const Dashboard = lazy(() => import("@/components/Dashboard"));
+const RecentTransactions = lazy(() => import("@/components/RecentTransactions"));
+const SpendingChart = lazy(() => import("@/components/SpendingChart"));
+const BudgetProgress = lazy(() => import("@/components/BudgetProgress"));
+const InvestmentPortfolio = lazy(() => import("@/components/InvestmentPortfolio"));
+
+// Lazy load export functions
+const exportToPDF = async (transactions: Transaction[]) => {
+  const { exportToPDF: exportFunc } = await import("@/lib/exportTransactions");
+  exportFunc(transactions);
+};
+
+const exportToExcel = async (transactions: Transaction[]) => {
+  const { exportToExcel: exportFunc } = await import("@/lib/exportTransactions");
+  exportFunc(transactions);
+};
 
 const Index = () => {
   const navigate = useNavigate();
@@ -242,15 +254,17 @@ const Index = () => {
                     <p className="text-muted-foreground text-sm lg:text-base">Welcome back! Here's your financial overview.</p>
                   </div>
                 </div>
-                <Dashboard transactions={filteredTransactions} />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <SpendingChart transactions={filteredTransactions} />
-                  <BudgetProgress transactions={filteredTransactions} />
-                </div>
-                <RecentTransactions 
-                  transactions={filteredTransactions} 
-                  onDelete={handleDeleteTransaction}
-                />
+                <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
+                  <Dashboard transactions={filteredTransactions} />
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <SpendingChart transactions={filteredTransactions} />
+                    <BudgetProgress transactions={filteredTransactions} />
+                  </div>
+                  <RecentTransactions 
+                    transactions={filteredTransactions} 
+                    onDelete={handleDeleteTransaction}
+                  />
+                </Suspense>
               </div>
             )}
 
@@ -293,29 +307,35 @@ const Index = () => {
                     </DropdownMenu>
                   </div>
                 </div>
-                <RecentTransactions 
-                  transactions={filteredTransactions} 
-                  onDelete={handleDeleteTransaction}
-                  showAll 
-                />
+                <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
+                  <RecentTransactions 
+                    transactions={filteredTransactions} 
+                    onDelete={handleDeleteTransaction}
+                    showAll 
+                  />
+                </Suspense>
               </div>
             )}
 
             {activeTab === "investments" && (
               <div className="space-y-6">
                 <h1 className="text-2xl lg:text-3xl font-bold">Investment Portfolio</h1>
-                <InvestmentPortfolio transactions={filteredTransactions} />
+                <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
+                  <InvestmentPortfolio transactions={filteredTransactions} />
+                </Suspense>
               </div>
             )}
 
             {activeTab === "analytics" && (
               <div className="space-y-6">
                 <h1 className="text-2xl lg:text-3xl font-bold">Analytics</h1>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <SpendingChart transactions={filteredTransactions} />
-                  <InvestmentPortfolio transactions={filteredTransactions} />
-                </div>
-                <BudgetProgress transactions={filteredTransactions} />
+                <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <SpendingChart transactions={filteredTransactions} />
+                    <InvestmentPortfolio transactions={filteredTransactions} />
+                  </div>
+                  <BudgetProgress transactions={filteredTransactions} />
+                </Suspense>
               </div>
             )}
 
